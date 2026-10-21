@@ -1,0 +1,15 @@
+# Секрети та паролі (не завантажувати в інтернет)
+stand/secrets/*.txt
+stand/certs/ca/ca.key
+stand/work/enc_key.txt
+
+# Бекапи
+stand/backups/*
+!stand/backups/.gitkeep
+
+# Системні файли
+.DS_Store
+Thumbs.db
+__pycache__/
+*.pycstand/certs/
+stand/pgdata/

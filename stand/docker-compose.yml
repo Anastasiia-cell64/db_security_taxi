@@ -1,0 +1,66 @@
+services:
+  db:
+    build:
+      context: .
+      dockerfile: Dockerfile.db
+    container_name: stand-db
+    environment:
+      POSTGRES_PASSWORD: postgrespassword
+    volumes:
+      - ./conf/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      - ./certs:/certs:ro
+      - ../variants:/variants:ro
+      - pgdata:/var/lib/postgresql/data
+    entrypoint: >
+      bash -c "
+      mkdir -p /tmp/certs &&
+      cp /certs/* /tmp/certs/ &&
+      chmod 600 /tmp/certs/*.key &&
+      chmod 644 /tmp/certs/*.crt &&
+      chown -R postgres:postgres /tmp/certs &&
+      exec docker-entrypoint.sh postgres -c config_file=/etc/postgresql/postgresql.conf -c ssl_key_file=/tmp/certs/server.key -c ssl_cert_file=/tmp/certs/server.crt -c ssl_ca_file=/tmp/certs/ca.crt
+      "
+    ports:
+      - "5432:5432"
+    networks:
+      stand_net:
+        ipv4_address: 172.28.0.10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.app
+    container_name: stand-app
+    volumes:
+      - ./app:/app
+      - ./certs:/certs:ro
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: taxi
+      DB_USER: postgres
+      DB_PASSWORD: postgrespassword
+    networks:
+      stand_net:
+        ipv4_address: 172.28.0.15
+
+  client:
+    image: postgres:16
+    container_name: stand-client
+    volumes:
+      - ./certs:/certs:rw
+      - ./work:/work
+      - ./scripts:/scripts:ro
+    entrypoint: ["tail", "-f", "/dev/null"]
+    networks:
+      - stand_net
+
+networks:
+  stand_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24
+
+volumes:
+  pgdata:
